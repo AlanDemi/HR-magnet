@@ -1,0 +1,283 @@
+[
+  {
+    "id": "head_of_dev",
+    "title": "Руководитель разработки",
+    "tags": [
+      "management",
+      "software development",
+      "kpi",
+      "agile",
+      "strategy"
+    ]
+  },
+  {
+    "id": "network_sec_eng",
+    "title": "Инженер по сети и безопасности",
+    "tags": [
+      "network",
+      "security",
+      "cisco",
+      "vpn",
+      "firewall",
+      "l2/l3"
+    ]
+  },
+  {
+    "id": "server_eng",
+    "title": "Инженер по серверам",
+    "tags": [
+      "linux",
+      "servers",
+      "virtualization",
+      "storage",
+      "monitoring"
+    ]
+  },
+  {
+    "id": "multimedia_eng",
+    "title": "Инженер по мультимедиа",
+    "tags": [
+      "multimedia",
+      "av equipment",
+      "video conferencing",
+      "hardware",
+      "networking"
+    ]
+  },
+  {
+    "id": "gtm_lead",
+    "title": "GTM Marketing Lead",
+    "tags": [
+      "marketing",
+      "gtm strategy",
+      "product marketing",
+      "b2b",
+      "analytics"
+    ]
+  },
+  {
+    "id": "sys_integration_analyst",
+    "title": "Аналитик по системной интеграции",
+    "tags": [
+      "integration",
+      "rest api",
+      "sql",
+      "logs",
+      "technical support",
+      "postman"
+    ]
+  },
+  {
+    "id": "head_of_sales",
+    "title": "Руководитель отдела продаж",
+    "tags": [
+      "sales",
+      "management",
+      "negotiation",
+      "b2b",
+      "strategy",
+      "crm"
+    ]
+  },
+  {
+    "id": "data_eng_llm",
+    "title": "Middle/Senior Data Engineer — LLM (Muxlisa AI)",
+    "tags": [
+      "python",
+      "llm",
+      "etl",
+      "pytorch",
+      "huggingface",
+      "rag"
+    ]
+  },
+  {
+    "id": "mlops_eng",
+    "title": "ML Engeneer (MLOps)",
+    "tags": [
+      "mlops",
+      "docker",
+      "kubernetes",
+      "ci/cd",
+      "python",
+      "fastapi"
+    ]
+  },
+  {
+    "id": "ml_team_lead",
+    "title": "ML - engineer (Team Lead)",
+    "tags": [
+      "machine learning",
+      "team lead",
+      "stt",
+      "tts",
+      "architecture",
+      "ci/cd"
+    ]
+  },
+  {
+    "id": "head_of_analytics",
+    "title": "Руководитель отдела аналитики",
+    "tags": [
+      "system analysis",
+      "management",
+      "uml",
+      "bpmn",
+      "sdlc",
+      "requirements"
+    ]
+  },
+  {
+    "id": "finance_manager",
+    "title": "Финансовый менеджер",
+    "tags": [
+      "finance",
+      "budgeting",
+      "contracts",
+      "tender",
+      "procurement",
+      "excel"
+    ]
+  },
+  {
+    "id": "sys_biz_analyst",
+    "title": "Системный/бизнес аналитик",
+    "tags": [
+      "system analysis",
+      "fhir",
+      "rest api",
+      "json",
+      "integration",
+      "digital health"
+    ]
+  },
+  {
+    "id": "pr_specialist",
+    "title": "Специалист пресс-службы",
+    "tags": [
+      "pr",
+      "media relations",
+      "smm",
+      "copywriting",
+      "communications"
+    ]
+  },
+  {
+    "id": "it_sales_manager",
+    "title": "IT Sales Manager",
+    "tags": [
+      "sales",
+      "b2b",
+      "it services",
+      "negotiation",
+      "english",
+      "lead generation"
+    ]
+  },
+  {
+    "id": "python_dev",
+    "title": "Python-разработчик",
+    "tags": [
+      "python",
+      "ai",
+      "postgresql",
+      "huggingface",
+      "openai",
+      "rest api"
+    ]
+  },
+  {
+    "id": "frontend_react",
+    "title": "Frontend-разработчик",
+    "tags": [
+      "react",
+      "javascript",
+      "typescript",
+      "figma",
+      "redux",
+      "next.js"
+    ]
+  },
+  {
+    "id": "frontend_vue",
+    "title": "Middle Frontend-разработчик",
+    "tags": [
+      "vue.js",
+      "typescript",
+      "pinia",
+      "html/css",
+      "rest api"
+    ]
+  },
+  {
+    "id": "php_dev",
+    "title": "PHP-разработчик",
+    "tags": [
+      "php",
+      "laravel",
+      "postgresql",
+      "rest api",
+      "nginx",
+      "oop"
+    ]
+  },
+  {
+    "id": "devops_eng",
+    "title": "DevOps-инженер",
+    "tags": [
+      "devops",
+      "kubernetes",
+      "docker",
+      "ci/cd",
+      "linux",
+      "helm"
+    ]
+  },
+  {
+    "id": "php_laravel_mid",
+    "title": "PHP (Laravel) Middle+ разработчик",
+    "tags": [
+      "php",
+      "laravel",
+      "postgresql",
+      "docker",
+      "unit tests",
+      "git"
+    ]
+  },
+  {
+    "id": "qa_middle",
+    "title": "Middle QA - тестировщик",
+    "tags": [
+      "qa",
+      "manual testing",
+      "api testing",
+      "sql",
+      "jira",
+      "mobile testing"
+    ]
+  },
+  {
+    "id": "legal_analyst",
+    "title": "Ведущий специалист - аналитик по нормативно-правовым документам",
+    "tags": [
+      "legal",
+      "compliance",
+      "regulations",
+      "contracts",
+      "legal analysis"
+    ]
+  },
+  {
+    "id": "data_eng_audio",
+    "title": "Middle\\Senior Data Engineer (Muxlisa AI)",
+    "tags": [
+      "python",
+      "audio processing",
+      "etl",
+      "s3",
+      "linux",
+      "stt/tts"
+    ]
+  }
+]

@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@source "../index.html";
+@source "./**/*.{js,ts,jsx,tsx}";
+
+:root {
+  --bg-primary: #04070d;
+  --accent-orange: #ff9d42;
+  --accent-blue: #5ba1ff;
+  --accent-light: #6b72ff;
+  --text-primary: #ffffff;
+}
+
+body {
+  font-family: 'Onest', sans-serif !important;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 
+   GLASS & PANELS 
+   Fixed artifacts by:
+   1. Using 12px blur instead of 24px
+   2. Using box-shadow instead of border
+   3. Force creation of GPU layers
+*/
+
+.glass,
+.glass-panel {
+  isolation: isolate;
+  background-color: rgba(255, 255, 255, 0.09);
+  /* Brighter background */
+  backdrop-filter: blur(20px);
+  /* Restored stronger blur */
+  -webkit-backdrop-filter: blur(20px);
+  border: none !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1),
+    /* Secondary top-down light */
+    0 12px 48px rgba(0, 0, 0, 0.5);
+  border-radius: 1.5rem;
+  backface-visibility: hidden;
+}
+
+/* Solid panel (No lines/artifacts) */
+.solid-panel {
+  background-color: #0c121d;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 10px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 2rem;
+}
+
+/* LAYOUT */
+.ml-80 {
+  margin-left: 20rem;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.flex {
+  display: flex;
+}
+
+.grid {
+  display: grid;
+}
+
+/* BUTTONS */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-light) 100%);
+  color: #fff;
+  border-radius: 1rem;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(91, 161, 255, 0.2);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(91, 161, 255, 0.3);
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent-light);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* FORM ELEMENTS */
+.input-field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px var(--accent-blue);
+}
+
+/* SIDEBAR */
+.sidebar-active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #5ba1ff !important;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+/* UTILS */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-orange));
+  height: 100%;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tag-badge {
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 2rem;
+  background: rgba(254, 131, 12, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(254, 131, 12, 0.3);
+  color: var(--accent-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

@@ -1,0 +1,17 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+aiogram==3.17.0
+sqlalchemy[asyncio]==2.0.36
+aiosqlite==0.20.0
+httpx==0.28.1
+pypdf==5.1.0
+python-docx==1.1.2
+pandas==2.2.3
+openpyxl==3.1.5
+python-multipart==0.0.20
+qrcode[pil]==8.0
+pymupdf>=1.27.0
+Pillow>=10.0.0
+colorlog>=6.8.0
+sentence-transformers>=3.0.0
+numpy>=1.26.0
