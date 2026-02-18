@@ -12,7 +12,7 @@ type Props = {
 const JOBS_PER_PAGE = 3
 
 function getMatchStyles(pct: number) {
-    if (pct >= 75) return {
+    if (pct >= 70) return {
         color: '#ff9d42',
         gradient: 'linear-gradient(135deg, #ff9d42 0%, #ff5f42 100%)',
         label: '🔥 Идеальное совпадение!',
@@ -26,9 +26,9 @@ function getMatchStyles(pct: number) {
     }
     return {
         color: '#94a3b8',
-        gradient: 'linear-gradient(135deg, #475569 0%, #1e293b 100%)',
+        gradient: 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
         label: '🤔 Стоит заглянуть',
-        badgeClass: 'tag-badge'
+        badgeClass: 'tag-badge-gray'
     }
 }
 
@@ -85,7 +85,7 @@ export default function ResultsScreen({ jobs, onApply, onRestart, isBrowseMode =
             <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {paginatedJobs.map((job, idx) => {
                     const styles = getMatchStyles(job.match_pct)
-                    const isHighMatch = job.match_pct >= 75
+                    const isHighMatch = job.match_pct >= 70
                     const CardComponent = isBrowseMode ? 'div' : 'button'
 
                     return (
