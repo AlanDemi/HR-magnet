@@ -126,11 +126,13 @@ async def run_api():
         host=API_HOST,
         port=API_PORT,
         log_level="info",
-        install_signal_handlers=False, # Disable uvicorn signal handling to avoid conflicts
     )
     server = uvicorn.Server(config)
     logger.info("Starting API server on %s:%s …", API_HOST, API_PORT)
-    await server.serve()
+    try:
+        await server.serve()
+    except KeyboardInterrupt:
+        pass
 
 
 async def main():
