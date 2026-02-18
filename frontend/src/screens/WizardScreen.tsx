@@ -127,7 +127,11 @@ export default function WizardScreen({ onComplete, onFileUpload, onBack }: Props
     }
 
     const handleBack = () => {
-        if (step > -1) setStep(step - 1)
+        if (step === 0) {
+            onBack?.()
+        } else if (step > 0) {
+            setStep(step - 1)
+        }
     }
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
