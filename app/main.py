@@ -126,6 +126,7 @@ async def run_api():
         host=API_HOST,
         port=API_PORT,
         log_level="info",
+        install_signal_handlers=False, # Disable uvicorn signal handling to avoid conflicts
     )
     server = uvicorn.Server(config)
     logger.info("Starting API server on %s:%s …", API_HOST, API_PORT)
@@ -136,12 +137,24 @@ async def main():
     """Run both the API server and the Telegram bot concurrently."""
     try:
         await init_db()
+        
+        # Running both tasks concurrently
         await asyncio.gather(
             run_api(),
             run_bot(),
         )
-    except asyncio.CancelledError:
-        logger.info("Tasks were cancelled.")
+    except (asyncio.CancelledError, KeyboardInterrupt):
+        logger.info("Shutdown signal received.")
+    finally:
+        # Graceful shutdown for the bot
+        logger.info("Stopping bot polling and closing session…")
+        try:
+            await dp.stop_polling()
+            await bot.session.close()
+        except Exception as e:
+            logger.debug("Error during bot shutdown: %s", e)
+        
+        logger.info("Application stopped gracefully.")
 
 
 # ──────────────────────────────────────────────
@@ -182,7 +195,5 @@ async def catch_all(full_path: str):
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("Application stopped by user.")
     except Exception as e:
         logger.critical("Unexpected error: %s", e)
