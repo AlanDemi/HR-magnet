@@ -53,23 +53,25 @@ export default function WizardScreen({ onComplete, onFileUpload, onBack }: Props
         if (s.length < 2) return true
 
         // 1. Repeating characters (aaaaa, 11111)
-        if (/(.)\1{4,}/.test(s.toLowerCase())) return true
+        if (/(.)\1{3,}/.test(s.toLowerCase())) return true
 
-        // 2. Large blocks of digits in what should be a name
-        if ((s.match(/\d/g) || []).length > s.length * 0.4) return true
+        // 2. Any digits in a name is an error
+        if (/\d/.test(s)) return true
 
-        // 3. No vowels (detects sghjk, fdfdfd - works for both Latin and Cyrillic)
-        // Names usually have at least one vowel every few characters
-        const hasVowels = /[aeiouyаеёиоуыэюя]/i.test(s)
-        if (s.length > 5 && !hasVowels) return true
+        // 3. Vowel density check (Proportion of vowels)
+        const vowels = s.match(/[aeiouyаеёиоуыэюя]/gi) || []
+        const vowelDensity = vowels.length / s.length
+        if (s.length > 5 && vowelDensity < 0.25) return true // Too few vowels (e.g. "sghjk")
 
         // 4. Unique character diversity
         const uniqueChars = new Set(s.toLowerCase().replace(/\s/g, '')).size
-        if (s.length > 8 && uniqueChars < 4) return true
+        if (s.length > 6 && uniqueChars < 3) return true
 
-        // 5. Random alphanumeric strings (e.g. fjdi9gjold)
-        // Check for lack of spaces in long strings which are usually names
-        if (s.length > 15 && !s.includes(' ')) return true
+        // 5. Long strings without spaces (most long names have a space)
+        if (s.length > 12 && !s.includes(' ')) return true
+
+        // 6. Common symbols that don't belong in a name
+        if (/[!@#$%^&*()_=+\[\]{};:"\\|,.<>\/?]/.test(s)) return true
 
         return false
     }
