@@ -20,33 +20,60 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── PREVENT LAYOUT SHIFT ── */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── CIRCUIT BACKGROUND ── */
+.circuit-bg {
+  background-color: #04070d;
+  background-image:
+    radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  background-size: 32px 32px;
+  position: relative;
+}
+
+.circuit-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(91, 161, 255, 0.08), transparent 40%),
+    radial-gradient(circle at 0% 100%, rgba(255, 157, 66, 0.03), transparent 30%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* 
    GLASS & PANELS 
-   Fixed artifacts by:
-   1. Using 12px blur instead of 24px
-   2. Using box-shadow instead of border
-   3. Force creation of GPU layers
 */
 
 .glass,
 .glass-panel {
   isolation: isolate;
-  background-color: rgba(255, 255, 255, 0.09);
-  /* Brighter background */
-  backdrop-filter: blur(20px);
-  /* Restored stronger blur */
-  -webkit-backdrop-filter: blur(20px);
-  border: none !important;
+  background-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.15),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1),
-    /* Secondary top-down light */
-    0 12px 48px rgba(0, 0, 0, 0.5);
+    0 10px 40px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   border-radius: 1.5rem;
-  backface-visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Solid panel (No lines/artifacts) */
+.glass:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Solid panel */
 .solid-panel {
   background-color: #0c121d;
   box-shadow:
@@ -180,37 +207,19 @@ body {
   }
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes float {
 
   0%,
   100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: .5;
-  }
-}
-
-.animate-bounce {
-  animation: bounce 1s infinite;
-}
-
-@keyframes bounce {
-
-  0%,
-  100% {
-    transform: translateY(-25%);
-    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-  }
-
-  50% {
     transform: translateY(0);
-    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  50% {
+    transform: translateY(-10px);
   }
 }
 
