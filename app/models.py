@@ -31,6 +31,33 @@ class CandidateStatus(str, PyEnum):
     ARCHIVE = "ARCHIVE"
 
 
+class UserRole(str, PyEnum):
+    """Roles for the administrative interface."""
+    ADMIN = "admin"
+    RECRUITER = "recruiter"
+
+
+class User(Base):
+    """Users allowed to access the admin panel."""
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(
+        Enum(UserRole, values_callable=lambda e: [m.value for m in e]),
+        default=UserRole.RECRUITER.value,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id} username={self.username!r} role={self.role}>"
+
+
 class Candidate(Base):
     """A job-fair attendee whose profile is captured by the system."""
 
@@ -52,6 +79,10 @@ class Candidate(Base):
     matched_vacancy_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     resume_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
+    # Granular tracking
+    source_platform: Mapped[str | None] = mapped_column(String(50), nullable=True, default="Telegram Bot")
+    file_type: Mapped[str | None] = mapped_column(String(20), nullable=True, default="none")
+
     admin_status: Mapped[str] = mapped_column(
         Enum(CandidateStatus, values_callable=lambda e: [m.value for m in e]),
         default=CandidateStatus.NEW.value,
@@ -88,3 +119,14 @@ class Vacancy(Base):
 
     def __repr__(self) -> str:
         return f"<Vacancy id={self.id} title={self.title!r}>"
+
+
+class Settings(Base):
+    """Dynamic configuration settings stored in DB."""
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(100), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<Setting key={self.key}>"

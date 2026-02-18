@@ -30,7 +30,7 @@ from sqlalchemy import select
 
 from app.config import BOT_TOKEN, WEBAPP_URL
 from app.database import async_session_factory
-from app.models import Candidate, SourceType, Vacancy
+from app.models import Candidate, SourceType, Vacancy, Settings
 from app.services.ai_service import parse_resume, parse_resume_image
 from app.services.matcher import match_jobs
 from app.services.text_extractor import extract_text, render_pdf_to_image
@@ -41,6 +41,21 @@ bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTM
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
+
+# ──────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────
+
+async def get_setting(key: str, default: str = "") -> str:
+    """Fetch a configuration setting from DB."""
+    try:
+        async with async_session_factory() as session:
+            result = await session.execute(select(Settings).where(Settings.key == key))
+            setting = result.scalar_one_or_none()
+            return setting.value if setting else default
+    except Exception as e:
+        logger.warning("Error fetching setting %s: %s", key, e)
+        return default
 
 # ──────────────────────────────────────────────
 # /start
@@ -69,11 +84,18 @@ async def cmd_start(message: types.Message):
     if not (buttons and buttons[0][0].web_app):
         webapp_hint = "\n⚙️ <i>Mini App будет доступен после развертывания фронтенда.</i>\n"
 
+    # Fetch custom welcome message from settings
+    welcome_text = await get_setting("welcome_message")
+    if not welcome_text:
+        welcome_text = (
+            "<b>👋 Добро пожаловать в HR-Magnet!</b>\n\n"
+            "Я помогу вам найти идеальную работу на этой ярмарке.\n\n"
+            "🔹 <b>Вариант 1:</b> Нажмите кнопку ниже, чтобы заполнить анкету вручную.\n"
+            "🔹 <b>Вариант 2:</b> Отправьте мне файл вашего резюме (<b>PDF/DOCX</b>) или его <b>фото</b>."
+        )
+
     await message.answer(
-        "<b>👋 Добро пожаловать в HR-Magnet!</b>\n\n"
-        "Я помогу вам найти идеальную работу на этой ярмарке.\n\n"
-        "🔹 <b>Вариант 1:</b> Нажмите кнопку ниже, чтобы заполнить анкету вручную.\n"
-        "🔹 <b>Вариант 2:</b> Отправьте мне файл вашего резюме (<b>PDF/DOCX</b>) или его <b>фото</b>.\n\n"
+        f"{welcome_text}\n\n"
         f"{webapp_hint}"
         "Давайте начнем! 🚀",
         reply_markup=keyboard,
@@ -211,6 +233,8 @@ async def handle_document(message: types.Message):
                 experience_years=parsed.get("years_experience", 0),
                 matched_vacancy_id=top_match_id,
                 resume_path=safe_name,
+                source_platform="Telegram Bot",
+                file_type=ext.lstrip('.'),
             )
             session.add(candidate)
             await session.commit()
@@ -293,6 +317,8 @@ async def handle_photo(message: types.Message):
                 experience_years=parsed.get("years_experience", 0),
                 matched_vacancy_id=top_match_id,
                 resume_path=safe_name,
+                source_platform="Telegram Bot",
+                file_type="jpg",
             )
             session.add(candidate)
             await session.commit()

@@ -25,6 +25,7 @@ export type ProfileData = {
   email: string;
   skills: string[];
   about: string;
+  experience_years?: number;
 };
 
 export type MatchedJob = {

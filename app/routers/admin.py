@@ -10,10 +10,16 @@ from sqlalchemy import select, func, desc, or_, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Candidate, CandidateStatus
+from app.models import Candidate, CandidateStatus, Vacancy, Settings, User
+from app.config import BOT_TOKEN
+from app.auth import get_current_user, get_admin_user
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(
+    prefix="/api/admin",
+    tags=["admin"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 # ---------------------------------------------------------------------------
@@ -40,15 +46,19 @@ class CandidateDetailResponse(BaseModel):
     phone: Optional[str]
     email: Optional[str]
     source: str
-    summary: Optional[str]
+    raw_text: Optional[str]  # Added to capture 'About Me' from manual/webapp submissions
+    summary: Optional[str]   # AI-generated summary from files
     skills_json: Optional[List[str]]
     experience_years: Optional[int] = 0
     matched_vacancy_id: Optional[str]
+    source_platform: Optional[str] = "unknown"
+    file_type: Optional[str] = "none"
     resume_path: Optional[str]
     admin_status: str
     admin_notes: Optional[str]
     quiz_results: Optional[dict]
     created_at: datetime
+
 
     @field_validator("experience_years", mode="before")
     @classmethod
@@ -275,18 +285,32 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     """Get dashboard metrics."""
     total = await db.scalar(select(func.count(Candidate.id))) or 0
     
+    # Status breakdown
     status_query = select(Candidate.admin_status, func.count(Candidate.id)).group_by(Candidate.admin_status)
     status_result = await db.execute(status_query)
     status_counts = {status: count for status, count in status_result.all()}
     
-    source_query = select(Candidate.source, func.count(Candidate.id)).group_by(Candidate.source)
-    source_result = await db.execute(source_query)
-    source_counts = {source: count for source, count in source_result.all()}
+    # Platform breakdown
+    platform_query = select(Candidate.source_platform, func.count(Candidate.id)).group_by(Candidate.source_platform)
+    platform_result = await db.execute(platform_query)
+    platform_counts = {p: count for p, count in platform_result.all()}
+    
+    # File type breakdown
+    file_type_query = select(Candidate.file_type, func.count(Candidate.id)).group_by(Candidate.file_type)
+    file_type_result = await db.execute(file_type_query)
+    file_type_counts = {f: count for f, count in file_type_result.all()}
+    
+    # Vacancy (Direction) breakdown
+    vacancy_query = select(Candidate.matched_vacancy_id, func.count(Candidate.id)).group_by(Candidate.matched_vacancy_id)
+    vacancy_result = await db.execute(vacancy_query)
+    vacancy_counts = {v: count for v, count in vacancy_result.all()}
     
     return {
         "total_candidates": total,
         "status_breakdown": status_counts,
-        "source_breakdown": source_counts,
+        "platform_breakdown": platform_counts,
+        "file_type_breakdown": file_type_counts,
+        "vacancy_breakdown": vacancy_counts,
     }
 
 
@@ -368,3 +392,50 @@ async def download_resume(filename: str):
             "Content-Disposition": f"attachment; filename*=utf-8''{encoded_filename}"
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Settings Management
+# ---------------------------------------------------------------------------
+
+# GET /settings is already protected by router-level get_current_user,
+# but we add get_admin_user to GET too for stricter RBAC
+@router.get("/settings", dependencies=[Depends(get_admin_user)])
+async def get_settings(db: AsyncSession = Depends(get_db)):
+    """Fetch all dynamic settings, falling back to defaults from .env if needed."""
+    from fastapi.responses import JSONResponse
+    result = await db.execute(select(Settings))
+    settings = {s.key: s.value for s in result.scalars().all()}
+    
+    # Defaults
+    defaults = {
+        "bot_token": BOT_TOKEN,
+        "welcome_message": "<b>👋 Добро пожаловать в HR-Magnet!</b>\n\nЯ помогу вам найти идеальную работу на этой ярмарке.\n\n🔹 <b>Вариант 1:</b> Нажмите кнопку ниже, чтобы заполнить анкету вручную.\n🔹 <b>Вариант 2:</b> Отправьте мне файл вашего резюме (<b>PDF/DOCX</b>) или его <b>фото</b>.",
+        "enable_tickets": "true",
+    }
+    
+    # Merge: DB values override defaults
+    for key, val in defaults.items():
+        if key not in settings:
+            settings[key] = val
+            
+    return JSONResponse(
+        content=settings,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"}
+    )
+
+
+@router.post("/settings", dependencies=[Depends(get_admin_user)])
+async def update_settings(payload: dict, db: AsyncSession = Depends(get_db)):
+    """Update multiple settings at once."""
+    for key, value in payload.items():
+        # Using a simple upsert logic
+        setting = await db.get(Settings, key)
+        val_str = str(value).lower() if isinstance(value, bool) else str(value)
+        if setting:
+            setting.value = val_str
+        else:
+            db.add(Settings(key=key, value=val_str))
+    
+    await db.commit()
+    return {"ok": True}

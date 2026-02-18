@@ -6,9 +6,15 @@ Falls back to pure keyword matching if the model is unavailable.
 """
 
 import logging
+import os
 from typing import Optional
 
 import numpy as np
+
+# Silence technical loggers to keep the console clean
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +33,11 @@ def _get_model():
     if _model is None:
         try:
             from sentence_transformers import SentenceTransformer
-            _model = SentenceTransformer("all-MiniLM-L6-v2")
-            logger.info("SentenceTransformer model loaded successfully.")
+            # Use local_files_only=True to prevent online checks and noise
+            _model = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+            logger.info("SentenceTransformer model loaded successfully (Offline Mode).")
         except Exception as e:
-            logger.warning("Could not load SentenceTransformer: %s.  Falling back to keyword-only matching.", e)
+            logger.warning("Could not load SentenceTransformer locally: %s. Falling back to keyword-only matching.", e)
     return _model
 
 

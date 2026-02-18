@@ -16,6 +16,8 @@ htmlcov/
 # Database
 *.db
 *.sqlite3
+*.sqlite
+*.sqlite3-journal
 
 # Environment
 .env
@@ -24,6 +26,7 @@ htmlcov/
 
 # Logs
 *.log
+logs/
 
 # IDE
 .vscode/
@@ -43,11 +46,18 @@ images/
 static/resumes/
 
 # Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/
 frontend/.vite/
-node_modules/
+frontend/.env.local
+frontend/.env.*.local
+
+# Local utility scripts
+check_api.py
+check_data.py
+create_users.py
 
 # Misc
 .gemini/

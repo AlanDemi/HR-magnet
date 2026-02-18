@@ -11,19 +11,35 @@ const AVAILABLE_SKILLS = [
 type Props = {
     onComplete: (data: ProfileData) => void
     onFileUpload: (file: File) => void
+    onBack?: () => void
 }
 
-export default function WizardScreen({ onComplete, onFileUpload }: Props) {
-    const [step, setStep] = useState(-1) // -1 is Welcome
+export default function WizardScreen({ onComplete, onFileUpload, onBack }: Props) {
+    const [step, setStep] = useState(0) // Start directly at Name input
     const [name, setName] = useState('')
-    const [phone, setPhone] = useState('')
+    const [phone, setPhone] = useState('+998 ')
     const [email, setEmail] = useState('')
     const [skills, setSkills] = useState<string[]>([])
+    const [manualSkill, setManualSkill] = useState('')
+    const [experience, setExperience] = useState('0')
     const [about, setAbout] = useState('')
     const [isUploading, setIsUploading] = useState(false)
 
-    const steps = ['Приветствие', 'Имя', 'Email', 'Телефон', 'Навыки', 'О себе']
-    const progress = Math.max(0, (step / (steps.length - 2)) * 100)
+    const skillMap: { [key: string]: string } = {
+        'питон': 'Python',
+        'джаваскрипт': 'JavaScript',
+        'реакт': 'React',
+        'джанго': 'Django',
+        'фаст апи': 'FastAPI',
+        'доккер': 'Docker',
+        'фигма': 'Figma',
+        'редис': 'Redis',
+        'нода': 'Node.js',
+        'тайпскрипт': 'TypeScript',
+    }
+
+    const steps = ['Имя', 'Email', 'Телефон', 'Навыки', 'О себе']
+    const progress = Math.max(0, (step / (steps.length - 1)) * 100)
 
     const toggleSkill = (skill: string) => {
         setSkills(prev =>
@@ -31,16 +47,72 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
         )
     }
 
+    const isGibberish = (text: string) => {
+        if (!text) return false
+        const s = text.trim()
+        if (s.length < 2) return true
+
+        // 1. Repeating characters (aaaaa, 11111)
+        if (/(.)\1{4,}/.test(s.toLowerCase())) return true
+
+        // 2. Large blocks of digits in what should be a name
+        if ((s.match(/\d/g) || []).length > s.length * 0.4) return true
+
+        // 3. No vowels (detects sghjk, fdfdfd - works for both Latin and Cyrillic)
+        // Names usually have at least one vowel every few characters
+        const hasVowels = /[aeiouyаеёиоуыэюя]/i.test(s)
+        if (s.length > 5 && !hasVowels) return true
+
+        // 4. Unique character diversity
+        const uniqueChars = new Set(s.toLowerCase().replace(/\s/g, '')).size
+        if (s.length > 8 && uniqueChars < 4) return true
+
+        // 5. Random alphanumeric strings (e.g. fjdi9gjold)
+        // Check for lack of spaces in long strings which are usually names
+        if (s.length > 15 && !s.includes(' ')) return true
+
+        return false
+    }
+
+    const formatPhone = (val: string) => {
+        let cleaned = val.replace(/\D/g, '')
+        if (!cleaned.startsWith('998')) cleaned = '998' + cleaned
+        cleaned = cleaned.substring(0, 12)
+
+        let result = '+'
+        for (let i = 0; i < cleaned.length; i++) {
+            if (i === 3 || i === 5 || i === 8 || i === 10) result += ' '
+            result += cleaned[i]
+        }
+        return result.trim()
+    }
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatPhone(e.target.value)
+        setPhone(formatted)
+    }
+
+    const addManualSkill = () => {
+        const s = manualSkill.trim().toLowerCase()
+        if (!s) return
+        const normalized = skillMap[s] || manualSkill.trim()
+        if (!skills.includes(normalized)) {
+            setSkills([...skills, normalized])
+        }
+        setManualSkill('')
+    }
+
     const canProceed = () => {
-        if (step === 0) return name.trim().length >= 2
-        if (step === 1) return email.trim().length >= 5 && email.includes('@')
-        if (step === 2) return phone.trim().length >= 7
-        if (step === 3) return skills.length >= 1
+        if (step === 0) return name.trim().length >= 2 && !isGibberish(name)
+        if (step === 1) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+        if (step === 2) return phone.replace(/\s/g, '').length === 13
+        if (step === 3) return true // Experience is optional or has default '0'
+        if (step === 4) return skills.length >= 1
         return true
     }
 
     const handleNext = () => {
-        if (step < 4) {
+        if (step < 5) {
             setStep(step + 1)
         } else {
             onComplete({
@@ -48,6 +120,7 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
                 phone: phone.trim(),
                 email: email.trim(),
                 skills,
+                experience_years: parseInt(experience) || 0,
                 about: about.trim()
             })
         }
@@ -67,14 +140,14 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
     }
 
     return (
-        <div style={{ width: '100%', maxWidth: 448, display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="animate-fade-in-up">
+        <div className="w-full max-w-md flex flex-col items-center animate-fade-in-up select-none">
 
             {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-                <div style={{ fontSize: 64, marginBottom: 12 }} className="animate-float">🧲</div>
-                <h1 style={{ fontSize: 32, fontWeight: 900, marginBottom: 6, letterSpacing: '-0.02em', color: 'var(--accent-orange)' }}>HR-Magnet</h1>
+            <div className="text-center mb-8">
+                <div className="text-6xl mb-3 animate-float">🧲</div>
+                <h1 className="text-3xl font-black mb-1.5 tracking-tighter text-orange-500">UStart</h1>
                 <p style={{ fontSize: 14, fontWeight: 500, opacity: 0.5 }}>
-                    {step === -1 ? 'Найди работу мечты за 1 минуту' : `Шаг ${step + 1} из ${steps.length - 1}`}
+                    Шаг {step + 1} из {steps.length}
                 </p>
             </div>
 
@@ -88,33 +161,7 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
             {/* Content card */}
             <div className="glass" style={{ width: '100%', padding: 28 }}>
 
-                {/* Step -1: Welcome */}
-                {step === -1 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        <div style={{ textAlign: 'center', marginBottom: 8 }}>
-                            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Добро пожаловать!</h2>
-                            <p style={{ fontSize: 14, opacity: 0.5 }}>Как вы хотите предоставить информацию?</p>
-                        </div>
 
-                        <label className="btn-primary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', background: 'var(--accent-blue)' }}>
-                            📂 Загрузить резюме / Фото
-                            <input type="file" hidden accept=".pdf,.docx,.jpg,.jpeg,.png" onChange={handleFileUpload} disabled={isUploading} />
-                        </label>
-
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '4px 0' }}>
-                            <div style={{ position: 'absolute', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                            <span style={{ position: 'relative', padding: '0 16px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.25, background: 'var(--surface-card)' }}>ИЛИ</span>
-                        </div>
-
-                        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }} onClick={() => setStep(0)}>
-                            ✍️ Заполнить анкету вручную
-                        </button>
-
-                        <p style={{ fontSize: 10, textAlign: 'center', opacity: 0.35, marginTop: 8, lineHeight: 1.6 }}>
-                            Поддерживаемые форматы:<br />PDF, DOCX, JPG, PNG
-                        </p>
-                    </div>
-                )}
 
                 {/* Step 0: Name */}
                 {step === 0 && (
@@ -163,20 +210,66 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
                             className="input-field"
                             placeholder="+998 90 123 45 67"
                             value={phone}
-                            onChange={e => setPhone(e.target.value)}
+                            onChange={handlePhoneChange}
                             autoFocus
                             onKeyDown={e => e.key === 'Enter' && canProceed() && handleNext()}
                         />
                     </div>
                 )}
 
-                {/* Step 3: Skills */}
+                {/* Step 3: Experience */}
                 {step === 3 && (
                     <div>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#FE830C', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            🔧 Навыки ({skills.length})
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#FE830C', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            📅 Опыт работы (лет)
                         </label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: 240, overflowY: 'auto', paddingRight: 4 }} className="custom-scrollbar">
+                        <input
+                            type="number"
+                            className="input-field"
+                            min="0"
+                            max="50"
+                            value={experience}
+                            onChange={e => setExperience(e.target.value)}
+                            autoFocus
+                            onKeyDown={e => e.key === 'Enter' && canProceed() && handleNext()}
+                        />
+                        <p style={{ fontSize: 11, opacity: 0.5, marginTop: 10 }}>
+                            Укажите примерное количество полных лет опыта
+                        </p>
+                    </div>
+                )}
+
+                {/* Step 4: Skills */}
+                {step === 4 && (
+                    <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#FE830C', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            🔧 Выберите навыки ({skills.length})
+                        </label>
+
+                        {/* Selected Skills Preview */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16, minHeight: 32 }}>
+                            {skills.map(s => (
+                                <span key={s} className="tag-badge-blue animate-fade-in" style={{ cursor: 'pointer' }} onClick={() => toggleSkill(s)}>
+                                    {s} ×
+                                </span>
+                            ))}
+                        </div>
+
+                        {/* Manual entry */}
+                        <div className="flex gap-2 mb-6">
+                            <input
+                                type="text"
+                                className="input-field"
+                                style={{ padding: '0.6rem 1rem' }}
+                                placeholder="Свой навык (напр. Python)"
+                                value={manualSkill}
+                                onChange={e => setManualSkill(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addManualSkill())}
+                            />
+                            <button className="btn-secondary" style={{ padding: '0.5rem 1.25rem' }} onClick={addManualSkill}>+</button>
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, maxHeight: 180, overflowY: 'auto', paddingRight: 4 }} className="custom-scrollbar">
                             {AVAILABLE_SKILLS.map(skill => (
                                 <button
                                     key={skill}
@@ -190,8 +283,8 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
                     </div>
                 )}
 
-                {/* Step 4: About */}
-                {step === 4 && (
+                {/* Step 5: About */}
+                {step === 5 && (
                     <div>
                         <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#FE830C', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             📝 О себе (необязательно)
@@ -200,7 +293,7 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
                             className="input-field"
                             rows={5}
                             style={{ resize: 'none' }}
-                            placeholder="Расскажите о своем опыте..."
+                            placeholder="Расскажите о своем опыте, проектах или достижениях..."
                             value={about}
                             onChange={e => setAbout(e.target.value)}
                             autoFocus
@@ -219,13 +312,13 @@ export default function WizardScreen({ onComplete, onFileUpload }: Props) {
                         className="btn-primary"
                         style={{
                             flex: 1,
-                            background: step === 4 ? 'var(--accent-orange)' : 'var(--accent-blue)',
-                            boxShadow: canProceed() ? `0 10px 25px -5px ${step === 4 ? 'rgba(254, 131, 12, 0.4)' : 'rgba(76, 81, 198, 0.4)'}` : 'none',
+                            background: step === 5 ? 'var(--accent-orange)' : 'var(--accent-blue)',
+                            boxShadow: canProceed() ? `0 10px 25px -5px ${step === 5 ? 'rgba(254, 131, 12, 0.4)' : 'rgba(76, 81, 198, 0.4)'}` : 'none',
                         }}
                         onClick={handleNext}
                         disabled={!canProceed()}
                     >
-                        {step < 4 ? 'Далее →' : '🚀 Отправить'}
+                        {step < 5 ? 'Далее →' : '🚀 Отправить'}
                     </button>
                 </div>
             )}

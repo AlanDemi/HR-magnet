@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Candidate, SourceType, Vacancy
+from app.models import Candidate, SourceType, Vacancy, Settings
 from app.services.ai_service import parse_resume, parse_resume_image, standardize_skills
 from app.services.matcher import match_jobs
 from app.services.text_extractor import extract_text, render_pdf_to_image
@@ -18,6 +18,15 @@ from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["api"])
+
+
+@router.get("/settings")
+async def get_public_settings(db: AsyncSession = Depends(get_db)):
+    """Fetch public settings (no auth required)."""
+    result = await db.execute(select(Settings).where(Settings.key == "enable_tickets"))
+    s = result.scalar_one_or_none()
+    return {"enable_tickets": s.value if s else "true"}
+
 
 
 # ---------------------------------------------------------------------------
@@ -34,6 +43,7 @@ class ProfileSubmission(BaseModel):
     about: str = ""
     telegram_id: int | None = None
     resume_filename: Optional[str] = None   # set if came from file upload
+    source_platform: str = "Web Page"       # frontend can pass "Telegram Mini-App"
 
 
 class MatchedJob(BaseModel):
@@ -159,7 +169,7 @@ async def parse_resume_endpoint(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
 ):
-    """Parse a resume file, matching jobs, and SAVE to DB in one go."""
+    """Parse a resume file and return structured data for verification. Does NOT save to DB yet."""
     # Validate file type
     allowed_extensions = {".pdf", ".docx", ".jpg", ".jpeg", ".png"}
     filename = file.filename or "unknown"
@@ -176,7 +186,7 @@ async def parse_resume_endpoint(
         tmp.write(content)
         tmp_path = tmp.name
 
-    # Persist a permanent copy
+    # Persist a permanent copy immediately so we have it for later
     import uuid
     uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "resumes")
     os.makedirs(uploads_dir, exist_ok=True)
@@ -185,7 +195,7 @@ async def parse_resume_endpoint(
     with open(permanent_path, "wb") as f:
         f.write(content)
 
-    logger.info("Uploaded file %s (%d bytes) -> saved=%s", filename, len(content), permanent_path)
+    logger.info("Uploaded file %s -> saved=%s", filename, permanent_path)
 
     try:
         parsed, _ = await _parse_file(tmp_path, ext, filename)
@@ -197,7 +207,7 @@ async def parse_resume_endpoint(
         else:
             standardized = []
 
-        # Get vacancies from DB for matching
+        # Get vacancies for preview matching (optional, but good for UX if we want to show 'Potential Matches')
         v_result = await db.execute(select(Vacancy).where(Vacancy.is_active == 1))
         all_vacancies = v_result.scalars().all()
         vacancies_data = [
@@ -205,35 +215,18 @@ async def parse_resume_endpoint(
             for v in all_vacancies
         ]
 
-        # Run matcher
+        # Run temporary matching for preview
         matches = match_jobs(standardized, vacancies_data)
-        top_match_id = matches[0]["id"] if matches else None
-
-        # Save to DB
-        candidate = Candidate(
-            full_name=parsed.get("full_name") or "Кандидат",
-            phone=parsed.get("phone", ""),
-            email=parsed.get("email", ""),
-            source=SourceType.FILE.value,
-            raw_text=parsed.get("summary", ""),
-            skills_json=standardized or raw_skills,
-            experience_years=int(parsed.get("years_experience") or 0),
-            matched_vacancy_id=top_match_id,
-            resume_path=safe_name,
-        )
-        db.add(candidate)
-        await db.flush()
-        await db.refresh(candidate)
-
-        logger.info("Auto-saved candidate from file: %s (id=%d)", candidate.full_name, candidate.id)
 
         return {
             "profile": {
-                "full_name": candidate.full_name,
-                "phone": candidate.phone,
-                "email": candidate.email,
-                "skills": candidate.skills_json,
-                "about": candidate.raw_text,
+                "full_name": parsed.get("full_name") or "Кандидат",
+                "phone": parsed.get("phone", ""),
+                "email": parsed.get("email", ""),
+                "skills": standardized or raw_skills,
+                "experience_years": int(parsed.get("years_experience") or 0),
+                "about": parsed.get("summary", ""),
+                "resume_filename": safe_name  # Frontend needs this to send back in /candidates
             },
             "matched_jobs": matches
         }
@@ -281,6 +274,8 @@ async def submit_profile(
         experience_years=body.experience_years,
         matched_vacancy_id=top_match_id,
         resume_path=body.resume_filename,
+        source_platform=body.source_platform,
+        file_type=os.path.splitext(body.resume_filename)[1].lstrip('.') if body.resume_filename else "none"
     )
     db.add(candidate)
     await db.flush()

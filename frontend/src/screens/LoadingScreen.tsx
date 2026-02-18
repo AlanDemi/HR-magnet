@@ -3,6 +3,7 @@ import { Brain } from 'lucide-react'
 
 type Props = {
     name: string
+    customText?: string
 }
 
 const STATUSES = [
@@ -17,13 +18,13 @@ const STATUSES = [
     "Финальная сверка данных..."
 ]
 
-export default function LoadingScreen({ name }: Props) {
+export default function LoadingScreen({ name, customText }: Props) {
     const [statusIdx, setStatusIdx] = useState(0)
 
     useEffect(() => {
         const interval = setInterval(() => {
             setStatusIdx(prev => (prev + 1) % STATUSES.length)
-        }, 1200)
+        }, 2500)
         return () => clearInterval(interval)
     }, [])
 
@@ -51,11 +52,11 @@ export default function LoadingScreen({ name }: Props) {
             {/* Status text block */}
             <div style={{ marginBottom: 40 }}>
                 <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em' }}>
-                    {name ? `${name.split(' ')[0]}, мы работаем!` : 'Обработка данных...'}
+                    {customText ? 'Подождите немного...' : (name ? `${name.split(' ')[0]}, мы работаем!` : 'Обработка данных...')}
                 </h2>
                 <div style={{ display: 'inline-block', padding: '6px 20px', borderRadius: 20, border: '1px solid rgba(254, 131, 12, 0.2)', background: 'rgba(254, 131, 12, 0.1)' }}>
                     <p style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FE830C' }}>
-                        {STATUSES[statusIdx]}
+                        {customText || STATUSES[statusIdx]}
                     </p>
                 </div>
             </div>
