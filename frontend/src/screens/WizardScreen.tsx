@@ -52,25 +52,30 @@ export default function WizardScreen({ onComplete, onFileUpload, onBack }: Props
         const s = text.trim()
         if (s.length < 2) return true
 
-        // 1. Repeating characters (aaaaa, 11111)
-        if (/(.)\1{3,}/.test(s.toLowerCase())) return true
+        // 1. Repeating characters (aaa, ffff)
+        if (/(.)\1{2,}/.test(s.toLowerCase())) return true
 
-        // 2. Any digits in a name is an error
+        // 2. Digits are forbidden
         if (/\d/.test(s)) return true
 
-        // 3. Vowel density check (Proportion of vowels)
+        // 3. Consonant clusters (Very rare to have 5+ consonants in a row in real names)
+        // This stops "пвашщгт", "dfghjk", etc.
+        const consonantsRegex = /[bcdfghjklmnpqrstvwxzбвгджзйклмнпрстфхцчшщ]/gi
+        const words = s.split(' ')
+        for (const word of words) {
+            const clusters = word.match(/[^aeiouyаеёиоуыэюя]{4,}/gi)
+            if (clusters) return true
+
+            // 4. Word length without spaces (Real names/surnames over 10 chars usually have a space or hyphen)
+            if (word.length > 10 && !word.includes('-')) return true
+        }
+
+        // 5. Vowel density (Names must have a reasonable amount of vowels)
         const vowels = s.match(/[aeiouyаеёиоуыэюя]/gi) || []
         const vowelDensity = vowels.length / s.length
-        if (s.length > 5 && vowelDensity < 0.25) return true // Too few vowels (e.g. "sghjk")
+        if (s.length > 5 && (vowelDensity < 0.25 || vowelDensity > 0.7)) return true
 
-        // 4. Unique character diversity
-        const uniqueChars = new Set(s.toLowerCase().replace(/\s/g, '')).size
-        if (s.length > 6 && uniqueChars < 3) return true
-
-        // 5. Long strings without spaces (most long names have a space)
-        if (s.length > 12 && !s.includes(' ')) return true
-
-        // 6. Common symbols that don't belong in a name
+        // 6. Special characters
         if (/[!@#$%^&*()_=+\[\]{};:"\\|,.<>\/?]/.test(s)) return true
 
         return false
