@@ -2,7 +2,7 @@
 
 **HR Magnet** — это умный Telegram-бот с веб-интерфейсом (Mini App) для автоматизации подбора персонала на ярмарках вакансий. Бот принимает резюме (PDF, DOCX, фото), извлекает из них данные с помощью ИИ, анализирует навыки кандидата и автоматически подбирает наиболее подходящие вакансии.
 
-![Tech Stack](https://img.shields.io/badge/Python-3.11+-blue.svg) ![Tech Stack](https://img.shields.io/badge/FastAPI-0.115+-green.svg) ![Tech Stack](https://img.shields.io/badge/React-18+-61DAFB.svg) ![Tech Stack](https://img.shields.io/badge/AI-Ollama%20%7C%20Gemini-orange.svg)
+![Tech Stack](https://img.shields.io/badge/Python-3.11+-blue.svg) ![Tech Stack](https://img.shields.io/badge/FastAPI-0.115+-green.svg) ![Tech Stack](https://img.shields.io/badge/React-18+-61DAFB.svg) ![Tech Stack](https://img.shields.io/badge/AI-Ollama-orange.svg)
 
 ---
 
@@ -13,7 +13,7 @@
 - **Умное извлечение:**
   - Извлекает **Имя**, **Контакты**, **Навыки**, **Опыт работы** и **Краткое резюме**.
   - Работает даже со сложной версткой (таблицы, колонки, сканы).
-  - Использует гибридный подход: **Tesseract / PyMuPDF** для текста + **Vision Models** (Llama 3.2 Vision / Gemini Flash) для сложных случаев.
+  - Использует гибридный подход: **Tesseract / PyMuPDF** для текста + **Vision Models** (Llama 3.2 Vision) для сложных случаев.
 
 ### 2. 🎯 Автоматический мэтчинг (Matching)
 - Анализирует навыки кандидата и сравнивает их с требованиями вакансий (`data/jobs.json`).
@@ -26,9 +26,7 @@
 - **Results Screen:** Красивое отображение результатов анализа и подходящих вакансий.
 - **Admin Dashboard:** Панель рекрутера для просмотра всех заявок, статистики и скачивания резюме.
 
-### 4. 🤖 Интеграция с ИИ
 - **Локально:** Поддержка **Ollama** (Llama 3, Llama 3.2 Vision) для полной приватности данных.
-- **В облаке:** Поддержка **Google Gemini API** (Flash 1.5) для быстрого и бесплатного деплоя (например, на Render.com).
 
 ---
 
@@ -105,7 +103,6 @@ npm run dev
 | Переменная | Описание | Значение по умолчанию |
 |------------|----------|-----------------------|
 | `TELEGRAM_BOT_TOKEN` | Токен вашего бота от @BotFather | - |
-| `GEMINI_API_KEY` | Ключ Google AI (для работы без Ollama) | - |
 | `OLLAMA_URL` | URL локального Ollama | `http://localhost:11434/api/generate` |
 | `WEBAPP_URL` | URL вашего Mini App (https) | `https://ваш-домен.com` |
 | `API_HOST` | Хост сервера | `0.0.0.0` |
@@ -121,7 +118,7 @@ npm run dev
 2. Подключите репозиторий.
 3. Укажите Build Command: `bash build.sh`
 4. Укажите Start Command: `python -m app.main`
-5. Добавьте переменные окружения (`GEMINI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `PYTHON_VERSION=3.11.0`, `NODE_VERSION=20.10.0`).
+5. Добавьте переменные окружения (`TELEGRAM_BOT_TOKEN`, `PYTHON_VERSION=3.11.0`, `NODE_VERSION=20.10.0`).
 
 ---
 
@@ -137,7 +134,7 @@ HR-magnet/
 │   ├── config.py          # Конфигурация
 │   ├── routers/           # API эндпоинты
 │   └── services/
-│       ├── ai_service.py     # Логика работы с ИИ (Ollama/Gemini)
+│        ├── ai_service.py     # Логика работы с ИИ (Ollama)
 │       ├── matcher.py        # Алгоритм подбора вакансий
 │       └── text_extractor.py # Парсинг файлов (OCR, PDF, DOCX)
 ├── data/

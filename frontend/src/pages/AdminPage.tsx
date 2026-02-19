@@ -190,6 +190,27 @@ const AdminPage: React.FC = () => {
         }
     };
 
+    const handleDownloadResume = async (filename: string) => {
+        try {
+            const response = await axios.get(`/api/admin/resume/${encodeURIComponent(filename)}`, {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Extract original filename if it has the timestamp prefix
+            const cleanName = filename.includes('_') ? filename.split('_').slice(1).join('_') : filename;
+            link.setAttribute('download', cleanName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error('Download resume failed:', err);
+            alert('Не удалось скачать файл резюме.');
+        }
+    };
+
     const funnelSteps = stats ? [
         { label: 'Отклики', count: stats.total_candidates || 0, pct: '100%', color: 'rgba(59, 130, 246, 0.8)' },
         {
@@ -449,7 +470,19 @@ const AdminPage: React.FC = () => {
                                     </div>
                                     <div className="space-y-1">
                                         <h2 className="text-2xl font-bold text-white tracking-tight">{selectedCandidate.full_name || 'Аноним'}</h2>
-                                        <StatusBadge status={selectedCandidate.admin_status} />
+                                        <div className="flex items-center gap-3">
+                                            <StatusBadge status={selectedCandidate.admin_status} />
+                                            {selectedCandidate.resume_path && selectedCandidate.resume_path !== 'none' && (
+                                                <button
+                                                    onClick={() => handleDownloadResume(selectedCandidate.resume_path)}
+                                                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-wider hover:bg-blue-500/20 transition-all active:scale-95"
+                                                    title="Скачать оригинальный файл резюме"
+                                                >
+                                                    <Download size={12} />
+                                                    Резюме
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 <button

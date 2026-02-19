@@ -16,7 +16,6 @@ BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
 OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
 OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3")
 OLLAMA_VISION_MODEL: str = os.getenv("OLLAMA_VISION_MODEL", "llama3.2-vision")
-OLLAMA_VISION_FAST_MODEL: str = os.getenv("OLLAMA_VISION_FAST_MODEL", "moondream")
 
 # Web App URL (Mini App served by the frontend dev server)
 WEBAPP_URL: str = os.getenv("WEBAPP_URL", "https://YOUR_DOMAIN/miniapp")

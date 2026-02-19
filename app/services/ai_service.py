@@ -6,7 +6,7 @@ import re
 import io
 import os
 from PIL import Image
-from app.config import OLLAMA_URL, OLLAMA_MODEL, OLLAMA_VISION_MODEL, OLLAMA_VISION_FAST_MODEL
+from app.config import OLLAMA_URL, OLLAMA_MODEL, OLLAMA_VISION_MODEL
 
 logger = logging.getLogger(__name__)
 
