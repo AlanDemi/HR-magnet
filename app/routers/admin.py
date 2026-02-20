@@ -356,8 +356,14 @@ async def export_candidates(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/resume/{filename}")
-async def download_resume(filename: str):
-    """Download an uploaded resume file."""
+async def download_resume(
+    filename: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Download an uploaded resume file. 
+    Access: Staff (Recruiters/Admins).
+    """
     import os
     from fastapi.responses import FileResponse
 

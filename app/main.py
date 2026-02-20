@@ -135,15 +135,43 @@ async def run_api():
         pass
 
 
+async def cleanup_old_resumes():
+    """Background task to delete resumes older than 90 days."""
+    uploads_dir = Path(__file__).resolve().parent.parent / "uploads" / "resumes"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    import time
+    # 90 days as requested by audit (instead of 24h)
+    retention_period = 90 * 24 * 3600
+
+    while True:
+        try:
+            now = time.time()
+            count = 0
+            for file_path in uploads_dir.iterdir():
+                if file_path.is_file():
+                    mtime = file_path.stat().st_mtime
+                    if now - mtime > retention_period:
+                        file_path.unlink()
+                        count += 1
+            if count > 0:
+                logger.info("Periodic cleanup: deleted %d resumes older than 90 days.", count)
+        except Exception as e:
+            logger.error("Error during cleanup: %s", e)
+        
+        await asyncio.sleep(3600 * 24)  # Check daily
+
+
 async def main():
-    """Run both the API server and the Telegram bot concurrently."""
+    """Run the API server, the Telegram bot, and cleanup task concurrently."""
     try:
         await init_db()
         
-        # Running both tasks concurrently
+        # Running tasks concurrently
         await asyncio.gather(
             run_api(),
             run_bot(),
+            cleanup_old_resumes(),
         )
     except (asyncio.CancelledError, KeyboardInterrupt):
         logger.info("Shutdown signal received.")

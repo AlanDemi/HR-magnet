@@ -181,7 +181,15 @@ async def parse_resume_endpoint(
             detail=f"Неподдерживаемый формат файла: {ext}. Допустимые: PDF, DOCX, JPG, PNG",
         )
 
+    # 15MB upload limit
+    MAX_FILE_SIZE = 15 * 1024 * 1024
     content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Файл слишком велик ({len(content) / 1024 / 1024:.1f}MB). Максимум 15MB."
+        )
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
@@ -190,8 +198,12 @@ async def parse_resume_endpoint(
     import uuid
     uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "resumes")
     os.makedirs(uploads_dir, exist_ok=True)
-    safe_name = f"{uuid.uuid4().hex[:8]}_{filename}"
+    
+    # Sanitize filename to prevent Directory Traversal
+    raw_basename = os.path.basename(filename)
+    safe_name = f"{uuid.uuid4().hex[:8]}_{raw_basename}"
     permanent_path = os.path.join(uploads_dir, safe_name)
+    
     with open(permanent_path, "wb") as f:
         f.write(content)
 
