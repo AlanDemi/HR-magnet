@@ -40,6 +40,28 @@ def _safe_list_skills(value) -> list[str]:
         if "," in value: return [s.strip() for s in value.split(",") if s.strip()]
         return [value.strip()]
     return []
+    
+def _extract_json(raw: str) -> str:
+    """Robust JSON extraction: find the outermost {...} block."""
+    # 1. First, strip clear markdown code blocks if they exist
+    match = re.search(r'```(?:json)?\s*(.*?)\s*```', raw, flags=re.DOTALL)
+    if match:
+        raw = match.group(1).strip()
+    
+    # 2. Find the first '{' and the last '}'
+    first_brace = raw.find('{')
+    last_brace = raw.rfind('}')
+    
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        return raw[first_brace:last_brace+1]
+    
+    # 3. Fallback for lists (sometimes AI returns just [...])
+    first_bracket = raw.find('[')
+    last_bracket = raw.rfind(']')
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        return raw[first_bracket:last_bracket+1]
+
+    return raw.strip()
 
 # ── PROMPTS ──────────────────────────────────────
 
@@ -117,15 +139,22 @@ async def parse_resume(text: str) -> dict:
             "prompt": TEXT_PROMPT.format(text=text),
             "stream": False,
             "format": "json",
+            "options": {
+                "num_ctx": 16384,
+                "num_predict": 4096,
+                "temperature": 0.1,
+            }
         }
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=180.0) as client:
                 resp = await client.post(OLLAMA_URL, json=payload)
                 resp.raise_for_status()
 
             raw = resp.json().get("response", "{}")
             logger.info("Raw AI response: %s", raw[:500])
-            parsed = json.loads(raw)
+            
+            clean_json = _extract_json(raw)
+            parsed = json.loads(clean_json)
             return _normalize(parsed)
 
         except Exception as exc:
@@ -160,17 +189,24 @@ async def parse_resume_image(image_path: str) -> dict:
                 "images": [img_b64],
                 "stream": False,
                 "format": "json",
+                "options": {
+                    "num_ctx": 16384,
+                    "num_predict": 4096,
+                    "temperature": 0.1,
+                }
             }
 
             logger.info("Sending to Ollama Vision (%s)...", OLLAMA_VISION_MODEL)
 
-            async with httpx.AsyncClient(timeout=150.0) as client:
+            async with httpx.AsyncClient(timeout=180.0) as client:
                 resp = await client.post(OLLAMA_URL, json=payload)
                 resp.raise_for_status()
 
             raw = resp.json().get("response", "{}")
             logger.info("Raw Vision response: %s", raw[:500])
-            parsed = json.loads(raw)
+            
+            clean_json = _extract_json(raw)
+            parsed = json.loads(clean_json)
             return _normalize(parsed)
 
         except Exception as exc:
@@ -190,6 +226,7 @@ async def standardize_skills(skills: list[str]) -> list[str]:
             "1. Удали лишние пояснения (например, 'Python (basics)' -> 'Python'). "
             "2. НЕ УДАЛЯЙ технические термины, языки, инструменты или специфические технологии (Docker, RTSP, CI/CD, Linux). "
             "3. Сохрани как можно больше полезных навыков. "
+            "ПИСАТЬ МЫСЛИ (THOUGHTS) ЗАПРЕЩЕНО. ОТВЕЧАЙ СРАЗУ JSON. "
             "Отвечай ТОЛЬКО JSON: { \"skills\": [...] }"
         )
         user_prompt = f"Приведи список к стандарту, сохранив все технологии:\n{', '.join(skills)}"
@@ -200,15 +237,21 @@ async def standardize_skills(skills: list[str]) -> list[str]:
             "prompt": user_prompt,
             "stream": False,
             "format": "json",
+            "options": {
+                "num_ctx": 16384,
+                "num_predict": 4096,
+                "temperature": 0.0,
+            }
         }
         
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=120.0) as client:
                 resp = await client.post(OLLAMA_URL, json=payload)
                 resp.raise_for_status()
                 
             raw = resp.json().get("response", "{}")
-            parsed = json.loads(raw)
+            clean_json = _extract_json(raw)
+            parsed = json.loads(clean_json)
             standardized = _safe_list_skills(parsed.get("skills", []))
             
             if not standardized:

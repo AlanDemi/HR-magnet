@@ -14,7 +14,7 @@ import { useEffect } from 'react';
 const HomePage: React.FC = () => {
     const [view, setView] = useState<'dashboard' | 'faq' | 'wizard' | 'loading' | 'verify' | 'results' | 'ticket' | 'browse' | 'success'>('dashboard');
     const [profile, setProfile] = useState<ProfileData | null>(null);
-    const [ticketsEnabled, setTicketsEnabled] = useState(true);
+    const [ticketsEnabled, setTicketsEnabled] = useState(false);
     const [matchedJobs, setMatchedJobs] = useState<MatchedJob[]>([]);
     const [selectedJob, setSelectedJob] = useState<MatchedJob | null>(null);
     const [parsedData, setParsedData] = useState<any>(null);
@@ -109,12 +109,24 @@ const HomePage: React.FC = () => {
         }
     };
 
-    const handleApply = (job: MatchedJob) => {
+    const handleApply = async (job: MatchedJob) => {
         setSelectedJob(job);
-        if (ticketsEnabled) {
-            setView('ticket');
-        } else {
-            setView('success');
+
+        // Re-fetch settings before final decision to avoid stale state
+        try {
+            const { data } = await axios.get(`/api/settings?t=${Date.now()}`);
+            const isEnabled = String(data.enable_tickets).toLowerCase() === 'true';
+
+            if (isEnabled) {
+                setView('ticket');
+            } else {
+                setView('success');
+            }
+        } catch (err) {
+            console.error('Failed to fetch settings before apply:', err);
+            // Fallback to current local state if API fails
+            if (ticketsEnabled) setView('ticket');
+            else setView('success');
         }
     };
 
