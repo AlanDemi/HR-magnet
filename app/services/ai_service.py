@@ -7,6 +7,7 @@ import io
 import os
 import asyncio
 from PIL import Image
+from tenacity import retry, stop_after_attempt, wait_exponential
 from app.config import OLLAMA_URL, OLLAMA_MODEL, OLLAMA_VISION_MODEL
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,7 @@ def _normalize(parsed: dict) -> dict:
     }
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 async def parse_resume(text: str) -> dict:
     """Parse text resume via Ollama LLM."""
     async with ai_semaphore:
@@ -161,6 +163,7 @@ async def parse_resume(text: str) -> dict:
             logger.error("Text parse failed: %s", exc)
             return _normalize({})
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 async def parse_resume_image(image_path: str) -> dict:
     """Parse image resume via Ollama Vision model."""
     if not os.path.exists(image_path):
@@ -214,6 +217,7 @@ async def parse_resume_image(image_path: str) -> dict:
             return _normalize({})
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 async def standardize_skills(skills: list[str]) -> list[str]:
     """Use AI to normalize verbose skills into clean tech keywords."""
     if not skills:

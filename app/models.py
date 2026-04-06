@@ -130,3 +130,19 @@ class Settings(Base):
 
     def __repr__(self) -> str:
         return f"<Setting key={self.key}>"
+
+class ParsedResumeCache(Base):
+    """Cache for AI-parsed resumes to avoid redundant LLM calls."""
+    __tablename__ = "parsed_resume_cache"
+
+    file_hash: Mapped[str] = mapped_column(String(64), primary_key=True)  # SHA-256
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    parsed_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ParsedResumeCache hash={self.file_hash[:8]} filename={self.filename}>"

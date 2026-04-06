@@ -3,6 +3,8 @@
 import logging
 import os
 import tempfile
+import uuid
+import hashlib
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
@@ -10,7 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Candidate, SourceType, Vacancy, Settings
+from app.models import Candidate, SourceType, Vacancy, Settings, ParsedResumeCache
 from app.services.ai_service import parse_resume, parse_resume_image, standardize_skills
 from app.services.matcher import match_jobs
 from app.services.text_extractor import extract_text, render_pdf_to_image
@@ -190,10 +192,9 @@ async def parse_resume_endpoint(
             detail=f"Файл слишком велик ({len(content) / 1024 / 1024:.1f}MB). Максимум 15MB."
         )
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-        tmp.write(content)
-        tmp_path = tmp.name
-
+    # Calculate hash for idempotency cache
+    file_hash = hashlib.sha256(content).hexdigest()
+    
     # Persist a permanent copy immediately so we have it for later
     import uuid
     uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "resumes")
@@ -207,9 +208,35 @@ async def parse_resume_endpoint(
     with open(permanent_path, "wb") as f:
         f.write(content)
 
+    # 1. Check Cache
+    cached_result = await db.get(ParsedResumeCache, file_hash)
+    if cached_result:
+        logger.info("Cache hit for file hash %s (%s). Skipping LLM parse.", file_hash[:8], filename)
+        v_result = await db.execute(select(Vacancy).where(Vacancy.is_active == 1))
+        all_vacancies = v_result.scalars().all()
+        vacancies_data = [
+            {"id": v.id, "title": v.title, "tags_json": v.tags_json}
+            for v in all_vacancies
+        ]
+        
+        profile = cached_result.parsed_json["profile"]
+        profile["resume_filename"] = safe_name # Update to the current upload path
+        
+        matches = match_jobs(profile["skills"], vacancies_data)
+        
+        return {
+            "profile": profile,
+            "matched_jobs": matches,
+            "cache_hit": True
+        }
+
     logger.info("Uploaded file %s -> saved=%s", filename, permanent_path)
 
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+
         parsed, _ = await _parse_file(tmp_path, ext, filename)
 
         # Standardize skills
@@ -230,23 +257,35 @@ async def parse_resume_endpoint(
         # Run temporary matching for preview
         matches = match_jobs(standardized, vacancies_data)
 
+        # Save to Cache
+        profile_to_cache = {
+            "full_name": parsed.get("full_name") or "Кандидат",
+            "phone": parsed.get("phone", ""),
+            "email": parsed.get("email", ""),
+            "skills": standardized or raw_skills,
+            "experience_years": int(parsed.get("years_experience") or 0),
+            "about": parsed.get("summary", ""),
+            "resume_filename": safe_name
+        }
+        
+        new_cache = ParsedResumeCache(
+            file_hash=file_hash,
+            filename=filename,
+            parsed_json={"profile": profile_to_cache}
+        )
+        db.add(new_cache)
+        await db.flush()
+
         return {
-            "profile": {
-                "full_name": parsed.get("full_name") or "Кандидат",
-                "phone": parsed.get("phone", ""),
-                "email": parsed.get("email", ""),
-                "skills": standardized or raw_skills,
-                "experience_years": int(parsed.get("years_experience") or 0),
-                "about": parsed.get("summary", ""),
-                "resume_filename": safe_name  # Frontend needs this to send back in /candidates
-            },
+            "profile": profile_to_cache,
             "matched_jobs": matches
         }
     finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 @router.post("/candidates", response_model=ProfileResponse)
